@@ -1,2 +1,4 @@
-# growatt-homeassistant-australia
-Growatt Home Assitant Template for AU
+# Home Assistant Template for Growatt Solar & Battery system in Australia
+Made by TechManPat 
+
+Install video link - 
