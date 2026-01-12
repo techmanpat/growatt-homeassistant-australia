@@ -1,0 +1,185 @@
+# ------------------------------------------------------------
+# Core
+# ------------------------------------------------------------
+default_config:
+
+# ------------------------------------------------------------
+# Frontend themes (optional)
+# ------------------------------------------------------------
+frontend:
+  themes: !include_dir_merge_named themes
+
+# ------------------------------------------------------------
+# Includes
+# ------------------------------------------------------------
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# ------------------------------------------------------------
+# Recorder (keep DB sane)
+# ------------------------------------------------------------
+recorder:
+  purge_keep_days: 7
+  commit_interval: 30
+
+# ------------------------------------------------------------
+# Power → Energy integration (W → kWh)
+# ------------------------------------------------------------
+sensor:
+  - platform: integration
+  # CHANGE: Set this to your Growatt grid import power entity (Watts).
+  # Example entities: sensor.growatt_grid_import_power, sensor.inverter_import_power
+    source: sensor.YOUR_GROWATT_GRID_IMPORT_POWER_W
+    name: Grid Import Energy
+    unit_prefix: k
+    round: 3
+    method: left
+
+  - platform: integration
+
+  # CHANGE: Set this to your Growatt house load / local load power entity (Watts).
+    source: sensor.YOUR_GROWATT_LOCAL_LOAD_POWER_W
+    name: House Energy
+    unit_prefix: k
+    round: 3
+    method: left
+
+# ------------------------------------------------------------
+# Utility meters (monthly + daily, tariff-aware)
+# ------------------------------------------------------------
+utility_meter:
+  # Monthly
+  grid_import_monthly:
+    source: sensor.grid_import_energy
+    cycle: monthly
+    tariffs:
+      - peak
+      - super_off_peak
+      - overnight
+      - off_peak
+
+  house_energy_monthly:
+    source: sensor.house_energy
+    cycle: monthly
+    tariffs:
+      - peak
+      - super_off_peak
+      - overnight
+      - off_peak
+
+  # Daily (needed for bill-to-date accumulator)
+  grid_import_daily:
+    source: sensor.grid_import_energy
+    cycle: daily
+    tariffs:
+      - peak
+      - super_off_peak
+      - overnight
+      - off_peak
+
+  house_energy_daily:
+    source: sensor.house_energy
+    cycle: daily
+    tariffs:
+      - peak
+      - super_off_peak
+      - overnight
+      - off_peak
+
+# ------------------------------------------------------------
+# Cost & savings calculations (monthly + daily + bill cycle)
+# ------------------------------------------------------------
+template:
+  - trigger:
+      - platform: time_pattern
+        minutes: "/5"
+    sensor:
+      # -----------------------
+      # Monthly costs / savings
+      # -----------------------
+      - name: Grid Cost This Month
+        unit_of_measurement: AUD
+        state: >-
+          {{ (
+          # CHANGE: Update these kWh rates to match your electricity plan.
+          # Tip: Keep everything in $/kWh (not cents). e.g. 0.30 = 30c/kWh.
+              (states('sensor.grid_import_monthly_peak') | float(0) * 0.538446) +
+              (states('sensor.grid_import_monthly_super_off_peak') | float(0) * 0.086151) +
+              (states('sensor.grid_import_monthly_overnight') | float(0) * 0.193841) +
+              (states('sensor.grid_import_monthly_off_peak') | float(0) * 0.236916)
+            ) | round(2, 'ceil') }}
+
+      - name: House Value This Month
+        unit_of_measurement: AUD
+        state: >-
+          {{ (
+          # CHANGE: Update these kWh rates to match your electricity plan.
+          # Tip: Keep everything in $/kWh (not cents). e.g. 0.30 = 30c/kWh.
+              (states('sensor.house_energy_monthly_peak') | float(0) * 0.538446) +
+              (states('sensor.house_energy_monthly_super_off_peak') | float(0) * 0.086151) +
+              (states('sensor.house_energy_monthly_overnight') | float(0) * 0.193841) +
+              (states('sensor.house_energy_monthly_off_peak') | float(0) * 0.236916)
+            ) | round(2, 'ceil') }}
+
+      - name: Energy Savings This Month
+        unit_of_measurement: AUD
+        state: >-
+          {{ (
+              (states('sensor.house_value_this_month') | float(0)) -
+              (states('sensor.grid_cost_this_month') | float(0))
+            ) | round(2, 'ceil') }}
+
+      # -----------------------
+      # Daily costs / value
+      # -----------------------
+      - name: Grid Cost Today
+        unit_of_measurement: AUD
+        state: >-
+          {{ (
+          # CHANGE: Update these kWh rates to match your electricity plan.
+          # Tip: Keep everything in $/kWh (not cents). e.g. 0.30 = 30c/kWh.
+              (states('sensor.grid_import_daily_peak') | float(0) * 0.538446) +
+              (states('sensor.grid_import_daily_super_off_peak') | float(0) * 0.086151) +
+              (states('sensor.grid_import_daily_overnight') | float(0) * 0.193841) +
+              (states('sensor.grid_import_daily_off_peak') | float(0) * 0.236916)
+            ) | round(2, 'ceil') }}
+
+      - name: House Value Today
+        unit_of_measurement: AUD
+        state: >-
+          {{ (
+          # CHANGE: Update these kWh rates to match your electricity plan.
+          # Tip: Keep everything in $/kWh (not cents). e.g. 0.30 = 30c/kWh.
+              (states('sensor.house_energy_daily_peak') | float(0) * 0.538446) +
+              (states('sensor.house_energy_daily_super_off_peak') | float(0) * 0.086151) +
+              (states('sensor.house_energy_daily_overnight') | float(0) * 0.193841) +
+              (states('sensor.house_energy_daily_off_peak') | float(0) * 0.236916)
+            ) | round(2, 'ceil') }}
+
+      # -----------------------
+      # Bill cycle totals (bi-monthly)
+      # These depend on input_number helpers updated by automations.yaml
+      # Supply charge: 129.2269 cents/day = 1.292269 AUD/day
+      # Cycle length: 60 days (matches automations.yaml)
+      # -----------------------
+      - name: Bill Total To Date
+        unit_of_measurement: AUD
+        state: >-
+          {{ (
+              (states('input_number.grid_cost_bill_to_date') | float(0)) +
+              (states('input_number.supply_charge_bill_to_date') | float(0))
+            ) | round(2, 'ceil') }}
+
+      - name: Projected Bill End Of Cycle
+        unit_of_measurement: AUD
+        state: >-
+          {% set bill_days = 60 %}
+          {% set elapsed = states('input_number.bill_days_elapsed') | float(0) %}
+          {% set energy = states('input_number.grid_cost_bill_to_date') | float(0) %}
+          {% set supply_per_day = 1.292269 %}
+          {% if elapsed < 1 %}
+            0
+          {% else %}
+            {{ (((energy / elapsed) * bill_days) + (bill_days * supply_per_day)) | round(2, 'ceil') }}
+          {% endif %}
