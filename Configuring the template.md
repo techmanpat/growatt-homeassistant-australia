@@ -19,19 +19,19 @@ It is not a full clone of my Home Assistant instance. You must connect your own 
 
 *If you want a different state & supplier tariffs you will need to edit the YAML yourself, use this as a guide, infact you can ZIP this up and upload into ChatGPT and ask it to update it to your own specific tariffs.   
 
-## Before you copy anything
-Do NOT copy `.storage/` from another system. It contains device registry and auth state.
+## Step 1. 
 
-## Step 1: Put files in your HA config
+Set up HA from scratch, we are working with Docker on Windows 10.
+1. Install Docker, Home Assitant and Growatt Integration - instructions in seperate file. 
+
+
+## Step 1.5: Put files in your HA config
 If you're running Home Assistant in Docker with a mapped config folder:
 
 1. Download this repo (Code -> Download ZIP) and unzip it.
 2. Copy these files into your HA config folder:
    - configuration.yaml
    - automations.yaml
-   - scripts.yaml
-   - scenes.yaml
-3. Copy `secrets.example.yaml` to `secrets.yaml` (optional).
 
 ## Step 2: Update the 2 critical entity IDs
 Open `configuration.yaml` and search for:
@@ -39,7 +39,7 @@ Open `configuration.yaml` and search for:
 - `sensor.YOUR_GROWATT_GRID_IMPORT_POWER_W`
 - `sensor.YOUR_GROWATT_LOCAL_LOAD_POWER_W`
 
-Replace them with your actual Growatt entities.
+Replace them with your actual Growatt entities, you can find your entities in HA. 
 
 Common places to find them:
 - Settings -> Devices & Services -> your Growatt integration -> Entities
