@@ -5,17 +5,19 @@ Made by TechManPat
 
 This repo is a TEMPLATE version of a Home Assistant config focused on Growatt energy tracking and bill estimation.
 
-It is not a full clone of someone's Home Assistant instance. You must connect your own Growatt integration and update a few entity IDs.
+It is not a full clone of my Home Assistant instance. You must connect your own Growatt integration and update a few entity IDs.
 
 ## What you get
 - Grid import energy (kWh) from your Growatt import power (W)
 - House energy (kWh) from your Growatt local load power (W)
-- Utility meters for daily + monthly import, split by tariff
+- Utility meters for daily + monthly import, split by tariff (Western Australia EV Tariffs form Synergy*)
 - Template sensors for:
   - Grid cost today
   - House value today
   - Bill to date
   - Projected bill end of cycle
+
+*If you want a different state & supplier tariffs you will need to edit the YAML yourself, use this as a guide, infact you can ZIP this up and upload into ChatGPT and ask it to update it to your own specific tariffs.   
 
 ## Before you copy anything
 Do NOT copy `.storage/` from another system. It contains device registry and auth state.
