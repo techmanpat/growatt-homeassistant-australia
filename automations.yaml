@@ -1,0 +1,154 @@
+# Template automations for Growatt-focused billing helpers
+# CHANGE: Make sure the referenced helpers/sensors exist (see README).
+
+- id: set_tariff_period
+  alias: Set tariff period
+  description: Sets the active tariff for both monthly utility meters based on time of day
+  mode: single
+  trigger:
+    - platform: homeassistant
+      event: start
+    - platform: time
+      at: "06:00:00"
+    - platform: time
+      at: "09:00:00"
+    - platform: time
+      at: "15:00:00"
+    - platform: time
+      at: "21:00:00"
+    - platform: time
+      at: "23:00:00"
+  action:
+    - choose:
+        # Overnight: 23:00–06:00
+        - conditions:
+            - condition: time
+              after: "23:00:00"
+              before: "06:00:00"
+          sequence:
+            - service: select.select_option
+              target:
+                entity_id:
+                  - select.grid_import_monthly
+                  - select.house_energy_monthly
+              data:
+                option: overnight
+
+        # Peak: 15:00–21:00
+        - conditions:
+            - condition: time
+              after: "15:00:00"
+              before: "21:00:00"
+          sequence:
+            - service: select.select_option
+              target:
+                entity_id:
+                  - select.grid_import_monthly
+                  - select.house_energy_monthly
+              data:
+                option: peak
+
+        # Super Off Peak: 09:00–15:00
+        - conditions:
+            - condition: time
+              after: "09:00:00"
+              before: "15:00:00"
+          sequence:
+            - service: select.select_option
+              target:
+                entity_id:
+                  - select.grid_import_monthly
+                  - select.house_energy_monthly
+              data:
+                option: super_off_peak
+      # Off Peak: 06:00–09:00 and 21:00–23:00 (and any other time not matched above)
+      default:
+        - service: select.select_option
+          target:
+            entity_id:
+              - select.grid_import_monthly
+              - select.house_energy_monthly
+          data:
+            option: off_peak
+
+
+- id: bill_cycle_daily_accumulator
+  alias: Bill cycle daily accumulator
+  description: Adds yesterday's grid cost and daily supply charge into bill-to-date totals each midnight. Resets at cycle start date.
+  mode: single
+  trigger:
+    - platform: time
+      at: "00:00:10"
+
+  variables:
+    cycle_start_date: "2025-12-05"
+    cycle_length_days: 60
+    supply_charge_per_day_aud: 1.292269
+
+  action:
+    # Work out how many days since the cycle start date
+    - variables:
+        start_ts: "{{ as_timestamp(strptime(cycle_start_date ~ ' 00:00:00', '%Y-%m-%d %H:%M:%S')) }}"
+        now_ts: "{{ as_timestamp(now()) }}"
+        days_since_start: "{{ ((now_ts - start_ts) / 86400) | int(0) }}"
+
+    # If today is cycle start day (days_since_start == 0), reset totals
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ days_since_start == 0 }}"
+          sequence:
+            - service: input_number.set_value
+              target:
+                entity_id: input_number.grid_cost_bill_to_date
+              data:
+                value: 0
+            - service: input_number.set_value
+              target:
+                entity_id: input_number.supply_charge_bill_to_date
+              data:
+                value: 0
+            - service: input_number.set_value
+              target:
+                entity_id: input_number.bill_days_elapsed
+              data:
+                value: 0
+
+    # Only accumulate if we are inside the cycle window (0..cycle_length_days-1)
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ days_since_start >= 0 and days_since_start < cycle_length_days }}"
+          sequence:
+            # Add yesterday's cost into bill to date
+            - service: input_number.set_value
+              target:
+                entity_id: input_number.grid_cost_bill_to_date
+              data:
+                value: >
+                  {{
+                    (states('input_number.grid_cost_bill_to_date') | float(0))
+                    + (states('sensor.grid_cost_today') | float(0))
+                  }}
+
+            # Add supply charge
+            - service: input_number.set_value
+              target:
+                entity_id: input_number.supply_charge_bill_to_date
+              data:
+                value: >
+                  {{
+                    (states('input_number.supply_charge_bill_to_date') | float(0))
+                    + supply_charge_per_day_aud
+                  }}
+
+            # Increment elapsed day counter
+            - service: input_number.set_value
+              target:
+                entity_id: input_number.bill_days_elapsed
+              data:
+                value: >
+                  {{
+                    (states('input_number.bill_days_elapsed') | float(0))
+                    + 1
+                  }}
