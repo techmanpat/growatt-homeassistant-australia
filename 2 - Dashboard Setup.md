@@ -22,7 +22,7 @@ Inside it, you should see at least:
 - `configuration.yaml`
 - `.storage` folder
 
-- ```powershell
+```powershell
 mkdir C:\HomeAssistant\config\custom_components -Force
 ```
 
@@ -35,7 +35,7 @@ Create this folder:
 
 If `custom_components` does not exist, create it.
 
-- ```powershell
+```powershell
 mkdir C:\HomeAssistant\config\custom_components\hacs -Force
 ```
 
