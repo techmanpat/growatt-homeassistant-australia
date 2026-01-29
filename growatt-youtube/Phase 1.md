@@ -23,33 +23,6 @@ If that folder exists, you are safe.
 
 ---
 
-## Quick Start (2 minutes)
-
-If you just want it running fast:
-
-```powershell
-wsl --install
-
-mkdir C:\HomeAssistant\config -Force
-
-docker run -d `
-  --name homeassistant `
-  --restart unless-stopped `
-  --privileged `
-  -e TZ="Australia/Perth" `
-  -p 8123:8123 `
-  -v C:\HomeAssistant\config:/config `
-  homeassistant/home-assistant:stable
-```
-
-Open:
-
-http://localhost:8123
-
-Done.
-
----
-
 # Full Setup Guide
 
 ## Step 1. Install WSL2
