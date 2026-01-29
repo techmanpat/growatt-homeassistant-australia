@@ -1,0 +1,521 @@
+Based on the steps in your doc, here is a clean, single file HTML tutorial you can paste into a GitHub repo (for GitHub Pages, or to view as a standalone file). 
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase 1, Installing Docker and Running Home Assistant (WSL2)</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:#121926;
+      --panel2:#0f1520;
+      --text:#e6edf3;
+      --muted:#9fb0c0;
+      --line:#223044;
+      --accent:#7cc4ff;
+      --good:#4ade80;
+      --warn:#fbbf24;
+      --bad:#fb7185;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:linear-gradient(180deg, #070a0f 0%, var(--bg) 60%);
+      color:var(--text);
+      line-height:1.55;
+    }
+    a{ color:var(--accent); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+    .wrap{
+      max-width:1080px;
+      margin:0 auto;
+      padding:28px 18px 60px;
+    }
+    header{
+      background:radial-gradient(1000px 400px at 20% 0%, rgba(124,196,255,0.20), transparent 60%),
+                 radial-gradient(900px 380px at 90% 10%, rgba(74,222,128,0.12), transparent 55%);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:22px 18px;
+      margin-bottom:18px;
+    }
+    h1{
+      margin:0 0 8px;
+      font-size:28px;
+      letter-spacing:0.2px;
+    }
+    .sub{
+      margin:0;
+      color:var(--muted);
+      max-width:70ch;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    @media (max-width: 900px){
+      .grid{ grid-template-columns:1fr; }
+    }
+    nav{
+      position:sticky;
+      top:14px;
+      align-self:start;
+      background:rgba(18,25,38,0.7);
+      backdrop-filter: blur(8px);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+    }
+    nav h2{
+      font-size:14px;
+      margin:0 0 10px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:0.12em;
+    }
+    .toc{
+      list-style:none;
+      padding:0;
+      margin:0;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .toc a{
+      display:block;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid transparent;
+      background:rgba(15,21,32,0.55);
+    }
+    .toc a:hover{
+      border-color:var(--line);
+      background:rgba(15,21,32,0.85);
+      text-decoration:none;
+    }
+    main{
+      background:rgba(18,25,38,0.55);
+      backdrop-filter: blur(8px);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
+    }
+    section{
+      padding:14px 0;
+      border-top:1px solid var(--line);
+    }
+    section:first-child{ border-top:none; padding-top:0; }
+    h2{
+      margin:0 0 8px;
+      font-size:20px;
+    }
+    h3{
+      margin:14px 0 8px;
+      font-size:16px;
+      color:#d7e3ee;
+    }
+    .note{
+      margin:10px 0 0;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(15,21,32,0.7);
+      color:var(--muted);
+    }
+    .callout{
+      margin:12px 0 0;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(124,196,255,0.35);
+      background:rgba(124,196,255,0.10);
+    }
+    .callout strong{ color:#dff0ff; }
+    .rule{
+      margin:12px 0 0;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(251,113,133,0.35);
+      background:rgba(251,113,133,0.08);
+    }
+    .rule strong{ color:#ffd6de; }
+    .steps{
+      margin:10px 0 0;
+      padding-left:18px;
+    }
+    .steps li{ margin:10px 0; }
+    code, pre{
+      font-family:var(--mono);
+      font-size:13px;
+    }
+    pre{
+      margin:10px 0 0;
+      padding:12px;
+      border-radius:14px;
+      background:var(--panel2);
+      border:1px solid var(--line);
+      overflow:auto;
+      position:relative;
+    }
+    .codebar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:10px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(15,21,32,0.7);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .btn{
+      cursor:pointer;
+      border:none;
+      padding:8px 10px;
+      border-radius:12px;
+      background:rgba(124,196,255,0.18);
+      color:var(--text);
+      border:1px solid rgba(124,196,255,0.35);
+      font-weight:600;
+      font-size:12px;
+    }
+    .btn:hover{ background:rgba(124,196,255,0.26); }
+    .kpi{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    @media (max-width: 700px){
+      .kpi{ grid-template-columns:1fr; }
+    }
+    .card{
+      border:1px solid var(--line);
+      background:rgba(15,21,32,0.55);
+      border-radius:16px;
+      padding:12px;
+    }
+    .card .t{
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:0.12em;
+      margin:0 0 6px;
+    }
+    .card .v{
+      margin:0;
+      font-size:14px;
+    }
+    footer{
+      margin-top:16px;
+      color:var(--muted);
+      font-size:12px;
+      text-align:center;
+    }
+    .ok{ color:var(--good); font-weight:700; }
+    .warn{ color:var(--warn); font-weight:700; }
+    .bad{ color:var(--bad); font-weight:700; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Phase 1, Installing Docker and Running Home Assistant (WSL2)</h1>
+      <p class="sub">
+        This guide installs WSL2, Docker Desktop, and runs Home Assistant with persistent storage on your local drive.
+        It is written for Windows 11, using PowerShell and Docker Desktop with WSL2 integration.
+      </p>
+
+      <div class="kpi">
+        <div class="card">
+          <p class="t">Target outcome</p>
+          <p class="v">Home Assistant runs in Docker, and survives reboots and container re creation.</p>
+        </div>
+        <div class="card">
+          <p class="t">Timezone</p>
+          <p class="v">Australia/Perth</p>
+        </div>
+        <div class="card">
+          <p class="t">Non negotiable</p>
+          <p class="v"><span class="bad">/config must be mapped</span> to C:\HomeAssistant\config</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <nav aria-label="Table of contents">
+        <h2>Contents</h2>
+        <ul class="toc">
+          <li><a href="#part-a">Part A, Install WSL2 properly</a></li>
+          <li><a href="#part-b">Part B, Install Docker Desktop</a></li>
+          <li><a href="#part-c">Part C, Create a permanent Home Assistant folder</a></li>
+          <li><a href="#part-d">Part D, Run Home Assistant with persistent storage</a></li>
+          <li><a href="#part-e">Part E, Backups and recovery</a></li>
+          <li><a href="#part-f">Part F, Prevent “Docker WSL storage resets”</a></li>
+          <li><a href="#rule">The non negotiable rule</a></li>
+        </ul>
+
+        <p class="note" style="margin-top:12px;">
+          Tip, open this page on one screen, and follow the steps on your Windows machine on the other.
+        </p>
+      </nav>
+
+      <main>
+        <section id="part-a">
+          <h2>Part A, Install WSL2 properly</h2>
+
+          <h3>Step 1, Enable WSL2</h3>
+          <ol class="steps">
+            <li>Open PowerShell as Administrator.</li>
+            <li>Run the command below.</li>
+            <li>Reboot when prompted.</li>
+          </ol>
+
+          <div class="codebar">
+            <span class="pill">PowerShell (Admin)</span>
+            <button class="btn" data-copy="code-wsl-install">Copy</button>
+          </div>
+          <pre id="code-wsl-install"><code>wsl --install</code></pre>
+
+          <h3>Optional, Step 2, Confirm WSL2 is running</h3>
+          <ol class="steps">
+            <li>After reboot, open PowerShell (normal is fine).</li>
+            <li>Run the command below to list distros and their version.</li>
+            <li>You should see a distro, usually Ubuntu, and Version 2.</li>
+          </ol>
+
+          <div class="codebar">
+            <span class="pill">PowerShell</span>
+            <button class="btn" data-copy="code-wsl-list">Copy</button>
+          </div>
+          <pre id="code-wsl-list"><code>wsl -l -v</code></pre>
+
+          <p class="note">
+            If your distro shows Version 1, run these commands.
+          </p>
+
+          <div class="codebar">
+            <span class="pill">PowerShell</span>
+            <button class="btn" data-copy="code-wsl-set">Copy</button>
+          </div>
+          <pre id="code-wsl-set"><code>wsl --set-default-version 2
+wsl --set-version Ubuntu 2</code></pre>
+        </section>
+
+        <section id="part-b">
+          <h2>Part B, Install Docker Desktop</h2>
+
+          <h3>Step 3, Install Docker Desktop</h3>
+          <ol class="steps">
+            <li>Download and install Docker Desktop using the official installer.</li>
+            <li>During install, select “Use WSL 2 instead of Hyper-V” if prompted.</li>
+            <li>After install, open Docker Desktop once.</li>
+          </ol>
+
+          <h3>Step 4, Enable WSL integration</h3>
+          <ol class="steps">
+            <li>Open Docker Desktop.</li>
+            <li>Go to Settings, then Resources, then WSL Integration.</li>
+            <li>Enable integration for your distro, for example Ubuntu.</li>
+            <li>Click Apply and Restart.</li>
+          </ol>
+
+          <h3>Step 5, Set Docker disk location on your local drive (optional but smart)</h3>
+          <ol class="steps">
+            <li>Docker Desktop, Settings, Resources, Advanced.</li>
+            <li>Increase Disk image size, 200GB+ recommended.</li>
+            <li>If Docker offers “Disk image location”, set it to a folder on C: or D: that you control.</li>
+            <li>Click Apply and Restart.</li>
+          </ol>
+
+          <p class="note">
+            Even if Docker’s internal disk lives elsewhere, your Home Assistant config is safe as long as you bind mount /config in Part D.
+          </p>
+        </section>
+
+        <section id="part-c">
+          <h2>Part C, Create a permanent Home Assistant config folder on C:</h2>
+
+          <h3>Step 6, Create folders</h3>
+          <ol class="steps">
+            <li>Open PowerShell (normal).</li>
+            <li>Create the folders below.</li>
+          </ol>
+
+          <div class="codebar">
+            <span class="pill">PowerShell</span>
+            <button class="btn" data-copy="code-mkdir">Copy</button>
+          </div>
+          <pre id="code-mkdir"><code>mkdir C:\HomeAssistant -Force
+mkdir C:\HomeAssistant\config -Force
+mkdir C:\HomeAssistant\backups -Force</code></pre>
+
+          <div class="callout">
+            <strong>What this does</strong><br/>
+            This is where your entire Home Assistant setup lives, config, storage, logs, and backups, independent from Docker internals.
+          </div>
+        </section>
+
+        <section id="part-d">
+          <h2>Part D, Run Home Assistant in Docker with persistent storage</h2>
+
+          <h3>Step 7, Run Home Assistant with bind mount (persistent)</h3>
+          <ol class="steps">
+            <li>Open PowerShell.</li>
+            <li>Run this docker command to start Home Assistant.</li>
+          </ol>
+
+          <div class="codebar">
+            <span class="pill">PowerShell</span>
+            <button class="btn" data-copy="code-docker-run">Copy</button>
+          </div>
+          <pre id="code-docker-run"><code>docker run -d `
+  --name homeassistant `
+  --restart unless-stopped `
+  --privileged `
+  -e TZ="Australia/Perth" `
+  -p 8123:8123 `
+  --log-opt max-size=10m `
+  --log-opt max-file=3 `
+  -v C:\HomeAssistant\config:/config `
+  homeassistant/home-assistant:stable</code></pre>
+
+          <h3>Step 8, Confirm files are being written to C:</h3>
+          <ol class="steps">
+            <li>Wait 1 to 2 minutes.</li>
+            <li>Run the command below.</li>
+            <li>You should see Home Assistant files appear in that folder.</li>
+          </ol>
+
+          <div class="codebar">
+            <span class="pill">PowerShell</span>
+            <button class="btn" data-copy="code-dir">Copy</button>
+          </div>
+          <pre id="code-dir"><code>dir C:\HomeAssistant\config</code></pre>
+
+          <p class="note">
+            You should see items like configuration.yaml, a .storage folder, and home-assistant.log.
+            That means persistence is working.
+          </p>
+
+          <h3>Step 9, Test persistence (proves you won’t lose config)</h3>
+          <ol class="steps">
+            <li>Stop and remove the container.</li>
+            <li>Then re run the same docker run command from Step 7.</li>
+            <li>Confirm Home Assistant opens in the same instance, not onboarding.</li>
+          </ol>
+
+          <div class="codebar">
+            <span class="pill">PowerShell</span>
+            <button class="btn" data-copy="code-persist">Copy</button>
+          </div>
+          <pre id="code-persist"><code>docker stop homeassistant
+docker rm homeassistant</code></pre>
+
+          <p class="note">
+            Then open: <code>http://localhost:8123</code>
+          </p>
+        </section>
+
+        <section id="part-e">
+          <h2>Part E, Make backups so you can recover from anything</h2>
+
+          <h3>Step 10, Create Home Assistant backups</h3>
+          <ol class="steps">
+            <li>In Home Assistant, go to Settings, System, Backups.</li>
+            <li>Create a backup.</li>
+            <li>Download the backup file periodically.</li>
+            <li>Save it to: <code>C:\HomeAssistant\backups</code></li>
+          </ol>
+
+          <p class="note">
+            If you want automation later, you can schedule copy jobs or sync backups to cloud storage.
+          </p>
+        </section>
+
+        <section id="part-f">
+          <h2>Part F, Things that prevent “weird Docker WSL storage resets”</h2>
+
+          <h3>Step 11, Keep Docker logs from growing forever</h3>
+          <p class="note">
+            This is already handled by the docker run flags:
+            <code>--log-opt max-size=10m</code>, and <code>--log-opt max-file=3</code>.
+          </p>
+
+          <h3>Step 12, Periodic cleanup (optional)</h3>
+          <ol class="steps">
+            <li>Once a month, check disk usage.</li>
+            <li>Optionally prune unused docker artifacts.</li>
+          </ol>
+
+          <div class="codebar">
+            <span class="pill">PowerShell</span>
+            <button class="btn" data-copy="code-prune">Copy</button>
+          </div>
+          <pre id="code-prune"><code>docker system df
+docker system prune -a</code></pre>
+
+          <div class="callout">
+            <strong>Be careful</strong><br/>
+            <span class="warn">prune -a</span> removes unused images. Only use it if you understand what it will delete.
+          </div>
+        </section>
+
+        <section id="rule">
+          <h2>The non negotiable rule</h2>
+
+          <div class="rule">
+            <strong>If you only remember one thing</strong><br/>
+            If <code>/config</code> is not mapped to <code>C:\HomeAssistant\config</code>, you can lose everything.<br/>
+            With the bind mount, restarts and reboots cannot wipe your Home Assistant config unless you delete that folder.
+          </div>
+
+          <p class="note">
+            If you want everything on C: only, or you want Docker’s disk image moved to D: for more space, update Docker Desktop settings in Part B Step 5.
+          </p>
+        </section>
+
+        <footer>
+          <p>Last updated, Phase 1 tutorial page, WSL2, Docker Desktop, Home Assistant persistent config.</p>
+        </footer>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    function copyFromPre(preId){
+      const el = document.getElementById(preId);
+      if(!el) return;
+      const text = el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('[data-copy="'+preId+'"]');
+        if(!btn) return;
+        const prev = btn.textContent;
+        btn.textContent = "Copied";
+        setTimeout(() => btn.textContent = prev, 900);
+      });
+    }
+
+    document.querySelectorAll("[data-copy]").forEach(btn => {
+      btn.addEventListener("click", () => copyFromPre(btn.getAttribute("data-copy")));
+    });
+  </script>
+</body>
+</html>
+```
