@@ -123,7 +123,7 @@ If yes, storage is working.
 
 ---
 
-## Step 6. Test safety
+## (Optional) Step 6. Test safety
 
 ```powershell
 docker stop homeassistant
