@@ -1,4 +1,5 @@
-# Home Assistant Helper Setup (Solar + Battery Sensors)
+# Home Assistant Helper Setup (Grwoatt Battery)
+MIN Type Inverter
 
 These template helpers combine multiple Growatt sensors into clean, usable totals for dashboards and Energy views.
 
@@ -177,10 +178,9 @@ Leave everything else blank.
 
 # Final Notes
 
-- Replace YOUR-DEVICE-ID with your actual Growatt entity names
+- Replace YOUR-DEVICE-ID with your actual Growatt SN / ID
 - All helpers update live
 - Safe for dashboards and Energy panel
-- No YAML required, UI only
 
 ---
 
