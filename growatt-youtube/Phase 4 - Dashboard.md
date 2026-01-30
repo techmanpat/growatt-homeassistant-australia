@@ -135,4 +135,4 @@ You now have:
 - Home consumption
 - Remaining battery hours
 
-This gives a complete picture of your system at a glance.
+This gives a complete picture of your Growatt system at a glance.
